@@ -54,8 +54,8 @@ def get_print_to_image(pattern, image, image_size, pattern_size, threshold, if_e
     # closed = cv2.erode(closed, kernel_2)
 
     #another way to get closed
-    Gray = cv2.cvtColor(resized, cv2.COLOR_BGR2GRAY)
-    Blur = cv2.GaussianBlur(Gray, (3, 3), 0)
+    gray = cv2.cvtColor(resized, cv2.COLOR_BGR2GRAY)
+    Blur = cv2.GaussianBlur(gray, (3, 3), 0)
     Edge = cv2.Canny(Blur, 10, 200)
     Edge = cv2.dilate(Edge, None)
     Edge = cv2.erode(Edge, None)
@@ -116,9 +116,9 @@ def get_print_to_image(pattern, image, image_size, pattern_size, threshold, if_e
 
 if __name__ == '__main__':
     pattern = 'test_floral.jpg'
-    image = 'dess.jpg'
+    image = 'test123.jpg'
     image_size = 256
-    pattern_size = 64
+    pattern_size = 128
     threshold = 1000
     if_extra = False
     modified_image = get_print_to_image(pattern, image, image_size, pattern_size, threshold, if_extra=False)
