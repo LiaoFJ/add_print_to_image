@@ -32,23 +32,41 @@ def get_print_to_image(pattern, image, image_size, pattern_size, threshold, if_e
     dim_image = (image_size, image_size)
     resized = cv2.resize(get_image, dim_image, interpolation=cv2.INTER_AREA)
 
-    #get gray from image
-    gray = cv2.cvtColor(resized, cv2.COLOR_BGR2GRAY)
-    #get x-gradient and y-gradient
-    gradX = cv2.Sobel(gray, ddepth=cv2.CV_32F, dx=1, dy=0, ksize=-1)
-    gradY = cv2.Sobel(gray, ddepth=cv2.CV_32F, dx=0, dy=1, ksize=-1)
+    # #get gray from image
+    #
+    # gray = cv2.cvtColor(resized, cv2.COLOR_BGR2GRAY)
+    # #get x-gradient and y-gradient
+    # gradX = cv2.Sobel(gray, ddepth=cv2.CV_32F, dx=1, dy=0, ksize=-1)
+    # gradY = cv2.Sobel(gray, ddepth=cv2.CV_32F, dx=0, dy=1, ksize=-1)
+    #
+    # # subtract the y-gradient from the x-gradient
+    #
+    # gradient = cv2.subtract(gradX, gradY)
+    # gradient = cv2.convertScaleAbs(gradient)
+    # blurred = cv2.blur(gradient, (3, 3))
+    #
+    # # get closed
+    #
+    # (_, thresh) = cv2.threshold(blurred, 30, 255, cv2.THRESH_BINARY)
+    # kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (7, 7))
+    # kernel_2 = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (7, 7))
+    # closed = cv2.morphologyEx(thresh, cv2.MORPH_CLOSE, kernel)
+    # closed = cv2.erode(closed, kernel_2)
 
-    # subtract the y-gradient from the x-gradient
-    gradient = cv2.subtract(gradX, gradY)
-    gradient = cv2.convertScaleAbs(gradient)
-    blurred = cv2.blur(gradient, (3, 3))
-
-    # get closed
-    (_, thresh) = cv2.threshold(blurred, 30, 255, cv2.THRESH_BINARY)
-    kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (7, 7))
-    kernel_2 = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (7, 7))
-    closed = cv2.morphologyEx(thresh, cv2.MORPH_CLOSE, kernel)
-    closed = cv2.erode(closed, kernel_2)
+    #another way to get closed
+    Gray = cv2.cvtColor(resized, cv2.COLOR_BGR2GRAY)
+    Blur = cv2.GaussianBlur(Gray, (3, 3), 0)
+    Edge = cv2.Canny(Blur, 10, 200)
+    Edge = cv2.dilate(Edge, None)
+    Edge = cv2.erode(Edge, None)
+    Contour, _ = cv2.findContours(Edge, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+    Contour = sorted(Contour, key=cv2.contourArea, reverse=True)
+    Max_contour = Contour[0]
+    Epsilon = 0.001 * cv2.arcLength(Max_contour, True)
+    Approx = cv2.approxPolyDP(Max_contour, Epsilon, True)
+    Mask = np.zeros(resized.shape[:2], np.uint8)
+    cv2.drawContours(Mask, [Approx], -1, 255, -1)
+    closed = cv2.GaussianBlur(Mask, (5, 5), 0)
 
     #get pattern
     get_pattern = cv2.imread(os.path.join(path, pattern))
@@ -58,13 +76,12 @@ def get_print_to_image(pattern, image, image_size, pattern_size, threshold, if_e
     bg_color = cv2.cvtColor(get_pattern, cv2.COLOR_BGR2LAB)[0][0]
 
     if if_extra:
-        dim_pattern = (pattern_size, pattern_size)
+        dim_pattern = (image_size*2, image_size*2)
         resize_pattern = cv2.resize(get_pattern, dim_pattern, interpolation=cv2.INTER_AREA)
         tile = resize_pattern
         #do flip and random crop
         tile = horizontal_flip(tile)
         tile = crop_image(tile, image_size)
-
     else:
         dim_pattern = (pattern_size, pattern_size)
         resize_pattern = cv2.resize(get_pattern, dim_pattern, interpolation=cv2.INTER_AREA)
@@ -94,13 +111,14 @@ def get_print_to_image(pattern, image, image_size, pattern_size, threshold, if_e
     cv2.imshow('resized', resized)
     cv2.waitKey()
     cv2.destroyAllWindows()
+    cv2.imwrite('result.jpg', resized)
     return resized
 
 if __name__ == '__main__':
     pattern = 'test_floral.jpg'
-    image = 'test123.jpg'
+    image = 'dess.jpg'
     image_size = 256
-    pattern_size = 128
+    pattern_size = 64
     threshold = 1000
     if_extra = False
     modified_image = get_print_to_image(pattern, image, image_size, pattern_size, threshold, if_extra=False)
