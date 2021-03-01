@@ -26,7 +26,7 @@ def crop_image(image, image_size):
     image = image[x_offset: x_offset + image_size, y_offset: y_offset + image_size, :]
     return image
 
-def get_print_to_image(pattern, image, image_size, pattern_size, threshold, if_extra, if_real_img):
+def get_print_to_image(pattern, image, image_size, pattern_size, threshold, epoch, if_extra, if_real_img):
     #get image
     get_image = cv2.imread(os.path.join(path, image))
     dim_image = (image_size, image_size)
@@ -102,41 +102,35 @@ def get_print_to_image(pattern, image, image_size, pattern_size, threshold, if_e
 
     # do filtering if the img is real img:
     if if_real_img:
-        for i in range(image_size):
-            for j in range(image_size):
-                if gray[i][j] >= 230:
-                    gray[i][j] = 0
+        for i in range(rows):
+            for j in range(cols):
+                if calc_diff(print_tile[i][j], bg_color) > diff_threshold and gray[i][j] > 0 and gray[i][j] <= 230:
+                    #gray-scale
+                    resized[i][j][0] = tile[i][j][0] * (gray[i][j]/255)
+                    resized[i][j][1] = tile[i][j][1] * (gray[i][j]/255)
+                    resized[i][j][2] = tile[i][j][2] * (gray[i][j]/255)
     else:
         print('image is just technical drawing')
-
-    if if_real_img:
         for i in range(rows):
             for j in range(cols):
-                if calc_diff(print_tile[i][j], bg_color) > diff_threshold and gray[i][j] != 0:
+                # if calc_diff(print_tile[i][j], bg_color) > diff_threshold and closed[i][j] != 0:
                     #gray-scale
-                    resized[i][j][0] = tile[i][j][0] * (gray[i][j]/255)
-                    resized[i][j][1] = tile[i][j][1] * (gray[i][j]/255)
-                    resized[i][j][2] = tile[i][j][2] * (gray[i][j]/255)
-    else:
-        for i in range(rows):
-            for j in range(cols):
-                if calc_diff(print_tile[i][j], bg_color) > diff_threshold and closed[i][j] != 0:
-                    #gray-scale
+                if closed[i][j] != 0:
                     resized[i][j][0] = tile[i][j][0] * (gray[i][j]/255)
                     resized[i][j][1] = tile[i][j][1] * (gray[i][j]/255)
                     resized[i][j][2] = tile[i][j][2] * (gray[i][j]/255)
 
-    cv2.imshow('resized', resized)
-    cv2.waitKey()
-    cv2.destroyAllWindows()
-    cv2.imwrite('result.jpg', resized)
+    cv2.imwrite('./sample/result_{}_1_img.jpg'.format(epoch), resized)
     return resized
 
 if __name__ == '__main__':
-    pattern = 'test_floral.jpg'
-    image = 'FashionGAN_Result_127.png'
+    pattern = 'download.png'
+    image = 'Top477.jpg'
     image_size = 256
-    pattern_size = 128
+    pattern_size = 64
     threshold = 1000
     if_extra = False
-    modified_image = get_print_to_image(pattern, image, image_size, pattern_size, threshold, if_extra=False, if_real_img=True)
+    epoch = 1
+
+    for i in range(epoch):
+        modified_image = get_print_to_image(pattern, image, image_size, pattern_size, threshold, i, if_extra=False, if_real_img=False)
